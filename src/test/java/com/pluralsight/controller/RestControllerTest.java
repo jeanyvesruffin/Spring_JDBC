@@ -27,4 +27,21 @@ public class RestControllerTest {
 			System.out.println("Ride name: " + ride.getName());
 		}
 	}
+	
+	
+	/**
+	 * Test de la creation d'une course en base de données
+	 */
+	@Test(timeout=3000)
+	public void testCreateRide() {
+		//Instance RestTemplate
+		RestTemplate restTemplate = new RestTemplate();
+		//Creation d'une course
+		Ride ride = new Ride();
+		ride.setName("Course de Tours");
+		ride.setDuration(33);
+		// put sur l'url qui correspond au controleur PUT A l'inverse lors du test testGetRides
+		// c'est l'url qui pointe sur le controleur GET
+		restTemplate.put("http://localhost:8080/ride_tracker/ride", ride);	
+	}
 }

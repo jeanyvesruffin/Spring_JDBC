@@ -123,4 +123,94 @@ Implementation de l'interface RideRepositoryImpl
 	}
 	...
 	
-2 - 
+## Creation d'enregistrement dans la base de donnée
+Plusieurs méthodes s'offre à nous soit à l'aide de:
+1. JdbcTemplate Insert
+2. SimpleJdbcInsert
+3. Object Relational Mapping 
+
+## Avant de commencer
+##### Creation des tables de la base donnée
+Dans l'editeur WorkBench executer le script suivant:
+
+	CREATE TABLE 'ride_tracker'.'ride'(
+		'id' INT NOT NULL AUTO_INCREMENT,
+		'name' VARCHAR(100) NOT NULL,
+		'duration' INT NOT NULL,
+		PRIMARY KEY ('id'));
+	)
+
+##### Creation des tests et des controllers
+Creer une methode de test simulant le remplissage de la table ride_tracker qui intancie RestTemplate:pour l'accès HTTP côté client synchrone. Elle simplifie la communication avec les serveurs HTTP et applique les principes RESTful. Elle gère les connexions HTTP, laissant le code d'application fournir des URL (avec des variables de modèle possibles) et extraire les résultats.
+
+Pour le test ajouter:
+
+	@Test(timeout=3000)
+	public void testCreateRide() {
+		//Instance RestTemplate
+		RestTemplate restTemplate = new RestTemplate();
+		//Creation d'une course
+		Ride ride = new Ride();
+		ride.setName("Course de Tours");
+		ride.setDuration(33);
+		restTemplate.put("http://localhost:3306/ride_tracker/ride",ride);
+	}
+		
+Sur le controlleur ajouter:
+
+	@RequestMapping(value = "/ride", method = RequestMethod.PUT)
+	public @ResponseBody Ride createRide(@RequestBody Ride ride) {
+		return null;
+	}
+
+
+##### Creation d'un appel au service
+Nous allons creer une nouvelle course lorsque l'on passera par la methode createRide du controlleur utilant la RequesTMethod.PUT
+
+Dans le controller
+
+	// remplacer return null
+	@RequestMapping(value = "/ride", method = RequestMethod.PUT)
+	public @ResponseBody Ride createRide(@RequestBody Ride ride) {
+		return rideService.create(ride);
+	}
+
+Puis à l'aide de l'ide generer la methode creatRide() dans l'interface
+Puis generer dans l'implementation de l'interface la methode create(ride) (@Override)
+
+Ajouter dans l'interface RideService
+
+	...
+	Ride createRide(Ride ride);
+	...
+
+Ajouter dans l'implementation RideServiceImpl
+
+	...
+	@Override
+		public Ride createRide(Ride ride) {		
+			return rideRepository.createRide(ride);
+		}
+	...
+
+##### Creation d'un appel au repository
+Nous alimentons enfin le repository en ajoutant au contrat d'interface la methode createRide(Ride ride)
+
+Ajouter dans le fichier RideRepository
+
+	Ride createRide(Ride ride);
+
+Ajouter dans l'implementation RideRepositoryImpl
+
+	@Override
+	public Ride createRide(Ride ride) {
+		return null;
+	}
+
+## Creation d'enregistrement dans la base de donnée **JdbcTemplate Insert**
+
+##  BUG FIXE
+
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
+java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
+
