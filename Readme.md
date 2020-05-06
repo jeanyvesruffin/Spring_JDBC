@@ -216,7 +216,22 @@ java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
 Solution:
 
-Desinstallation/ Reinstallation mysql
+Desinstallation/ Reinstallation de MySQL à l'adresse :
 
-Le path de configuration mysql se trouve dans C:\tools\mysql
+https://dev.mysql.com/
+
+Toujours en erreur
+
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLException: The server time zone value 'Paris, Madrid (heure d??t?)' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the 'serverTimezone' configuration property) to use a more specifc time zone value if you want to utilize time zone support.] avec la cause
+com.mysql.cj.exceptions.InvalidConnectionAttributeException: The server time zone value 'Paris, Madrid (heure d??t?)' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the 'serverTimezone' configuration property) to use a more specifc time zone value if you want to utilize time zone support.
+
+Ajout dans le fichier de configuration my.ini de la ligne suivante:
+
+	# Set default time zone
+	default-time-zone = '+02:00'
+	
+Bien penser à arreter et redemarrer mysql dans le menu windows tapper services puis chercher le afin de le restart.
+Attention le service porte le nom defini lors de l'installation de mysql ici SQLAuthority
+	
+
 
