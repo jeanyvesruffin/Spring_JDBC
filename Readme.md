@@ -214,3 +214,9 @@ Ajouter dans l'implementation RideRepositoryImpl
 SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
 java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
+Solution:
+
+Desinstallation/ Reinstallation mysql
+
+Le path de configuration mysql se trouve dans C:\tools\mysql
+
