@@ -10,6 +10,10 @@ public class Ride {
 		return duration;
 	}
 
+	public Integer getId() {
+		return id;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -18,16 +22,12 @@ public class Ride {
 		this.duration = duration;
 	}
 
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
 	public void setName(String name) {
 		this.name = name;
 	}
 
-	public Integer getId() {
-		return id;
-	}
-
-	public void setId(Integer id) {
-		this.id = id;
-	}
-	
 }

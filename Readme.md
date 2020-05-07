@@ -522,10 +522,259 @@ Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de 
 	...
 
 
-##### UpdateMultiple
+##### Mise à jour de batch (update multiple en une seul requete)
 
+1 - On ajoute une colonne à notre base de donnée
 
+	USE ride_tracker;
+	ALTER TABLE ride ADD ride_date DATETIME AFTER duration;
 
+2 - Le but est de remplir en une seul requete toutes les lignes en y ajoutant une ride_date.
+
+Dans notre fichier RestControllerTest, ajouter le test suivant:
+
+	...
+	@Test(timeout=3000)
+	public void testBatchUpdate() {
+		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.getForObject("http://localhost:8080/ride_tracker/batch", Object.class);
+	}
+	...
+
+3 - Ajouter le code suivant dans le RideController ou nous appelons la future methode de service batch que nous crerons apres:
+	
+	...
+	@RequestMapping(value = "/batch", method = RequestMethod.GET)
+	public @ResponseBody Object batch() {
+		rideService.batch();
+		return null;
+	}
+	...
+
+4 - Ajouter au contrat d'interface RideService
+
+	...
+	void batch();
+	...
+	
+5 -  On ajoute l'implementation de l'interface dans le fichier RideServiceImpl avec la future methode de repository updateRides(pairs) que nous crerons apres:
+
+	...
+	@Override
+	public void batch() {
+		List<Ride> rides = rideRepository.getRides();
+		List<Object[]> pairs = new ArrayList<>();
+		for (Ride ride : rides) {
+			Object[]tmp = {new Date(), ride.getId()};
+			pairs.add(tmp);
+		}
+		rideRepository.updateRidespairs(pairs);
+	}
+	...
+	
+6 - Ajouter au contrat d'interface RideRepository
+
+	...
+	void updateRides(List<Object[]> pairs);
+	...
+	
+7 - On ajoute l'implementation de l'interface dans le fichier RideRepositoryImpl
+
+	...
+	@Override
+	public void updateRides(List<Object[]> pairs) {
+		jdbcTemplate.batchUpdate("UPDATE ride SET ride_date = ? WHERE id = ?", pairs);	
+	}
+	...
+
+## Suppression d'un enregistrement de la base de données
+Nous utiliserons JdbcTemplate ou NamedParameterJdbcTemplate pour supprimer des donnée dans la base de données.
+
+##### Delete JdbcTemplate
+
+1 - Dans le fichier RestControllerTest, ajouter un test sur la suppression de donnée en base:
+
+	...
+	@Test(timeout=3000)
+	public void testDelete() {
+		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.delete("http://localhost:8080/ride_tracker/delete/18");
+	}
+	...
+
+2 - Dans RideController
+
+	...
+	@RequestMapping(value = "/delete/{id}", method = RequestMethod.DELETE)
+	public @ResponseBody Object delete(@PathVariable(value="id") Integer id) {
+		rideService.deleteRide(id);
+		return null;
+	}
+	...
+	
+3 - Ajouter au contrat d'interface RideService
+
+	...
+	void deleteRide(Integer id);
+	...
+
+4 - On ajoute l'implementation de l'interface dans le fichier RideServiceImpl
+
+	...
+	@Override
+	public void deleteRide(Integer id) {
+		rideRepository.deleteRide(id);
+	}
+	...
+	
+5 - Ajouter au contrat d'interface RideRepository
+
+	...
+	void deleteRide(Integer id);
+	...
+	
+6 - On ajoute l'implementation de l'interface dans le fichier RideRepositoryImpl
+
+	...
+	@Override
+	public void deleteRide(Integer id) {
+		jdbcTemplate.update("DELETE FROM ride WHERE id = ?", id);
+	}
+	...
+	
+##### Delete NamedParameterJdbcTemplate
+Commenter au prealable la precedente technique de suppression dans le fichier RideRepositoryImpl public void deleteRide(Integer id)
+
+1 - Ajouter dans le fichier RideRepositoryImpl:
+
+	...
+	@Override
+	public void deleteRide(Integer id) {
+		NamedParameterJdbcTemplate namesTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
+		// Creation d'une map avec comme name value pairs (Object)
+		Map<String, Object> paramMap = new HashMap<>();
+		paramMap.put("id", id);
+		namesTemplate.update("DELETE FROM ride WHERE id = :id", paramMap);
+	}
+	...
+
+Remarquons ici que le paramtre id est transmis à l'aide d'une Map
+
+2 - Modifions notre test en remplaceant l'id à supprimer par un id existant, maintenant 17 . Dans le fichier RestControllerTest
+
+	...
+	@Test(timeout=3000)
+	public void testDelete() {
+		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.delete("http://localhost:8080/ride_tracker/delete/17");
+	}
+	...
+	
+## Exception
+Nous verrons ici comment traiter les exceptions.
+
+##### Modification de test pour attraper l'erreur
+
+1 - Ajouter le test suivant dans le fichier RestControllerTest
+
+	...
+	@Test(timeout=3000)
+	public void testException() {
+		RestTemplate restTemplate = new RestTemplate();
+		restTemplate.getForObject("http://localhost:8080/ride_tracker/test", Ride.class);
+	}
+	...
+	
+2 - Ajouter dans le fichier RideController
+
+	@RequestMapping(value = "/test", method = RequestMethod.GET)
+	public @ResponseBody Object test() {
+		throw new DataAccessException("Testing exception thrown") {
+			};
+		}		
+	
+Si l'on test cela nous rencontrons une erreur. Mais son traitement n'est pas optimal.
+
+##### ExceptionHandler et ServiceError
+
+1 - Ajouter un package exemple com.pluralsight.util
+
+2 - Ajouter une classe ServiceException dans ce package avec getters, setters, constructeur sans parametre et constructeur avec parametres
+
+	public class ServiceError {
+		private int code;
+		private String message;
+		public ServiceError() {
+			super();
+		}
+		public ServiceError(int code, String message) {
+			super();
+			this.code = code;
+			this.message = message;
+		}
+		public int getCode() {
+			return code;
+		}
+		public String getMessage() {
+			return message;
+		}
+		public void setCode(int code) {
+			this.code = code;
+		}
+		public void setMessage(String message) {
+			this.message = message;
+		}
+	}
+
+3 - Ajouter dans le fichier RideController
+
+	@ExceptionHandler(RuntimeException.class)
+	public ResponseEntity<ServiceError> handle(RuntimeException ex){
+		ServiceError error = new ServiceError(HttpStatus.OK.value(), ex.getMessage());
+		return new ResponseEntity<>(error, HttpStatus.OK);
+	}
+
+Maintenant l'erreur est relevée mais le test s'execute normalement.
+
+## Transactions
+Les transactions permettent de faire de multiple appel à jdbcTemplate à l'aide de DataSourceTransactionManager, cad, que l'on peut enchainer les requetes.
+
+##### Transaction Manager
+
+1 - Dans le fichier RideServiceImpl modifier la methode public void batch() telque:
+
+	@Override
+	public void batch() {
+		List<Ride> rides = rideRepository.getRides();
+		List<Object[]> pairs = new ArrayList<>();
+		for (Ride ride : rides) {
+			Object[] tmp = { new Date(), ride.getId() };
+			pairs.add(tmp);
+		}
+		rideRepository.updateRides(pairs);
+		throw new DataAccessException("Testing Exception Handling") {
+		};
+	}
+
+2 - Dans le fichier de configuration jdbc-config.xml
+
+Cliquer sur l'onglet Namespaces et cocher tx - http://www.springframework.org/schema/tx
+
+Puis ajouter les deux beans suivants:
+
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+3 - Dans le fichier RideServiceImpl. Ajouter sur la methode public void batch() l'annotation @Transactional
+
+4 - S'il on test désormais la méthode testBatchUpdate.
+
+Nous pouvons observer que l'ors de l'exception l'application ne plante pas et l'exceution de batchUpdate ne fait rien en base de donnée.
+
+Dans une application plus complexe, si je mettais à jour 3, 4, 5 tables de base de données, tout ce que j'avais à faire serait de mettre cette annotation en haut et cela annulerait toutes nos modifications si une exception était levée quelque part en cours de route.
 
 ##  BUG FIXE
 
@@ -556,4 +805,8 @@ Le jour suivant: "Toujours en  erreur"
 SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.dao.DataAccessResourceFailureException: Error retrieving database meta-data; nested exception is org.springframework.jdbc.support.MetaDataAccessException: Could not get Connection for extracting meta-data; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
 java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
-Il faut tous simplement allumer le server mysql workbench
+SOLUTION Il faut tous simplement allumer le server mysql workbench
+
+ERREUR: WARNING: Request method 'PUT' not supported
+
+

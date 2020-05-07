@@ -20,8 +20,6 @@
 			<artifactId>spring-jdbc</artifactId>
 			<version>5.2.6.RELEASE</version>
 		</dependency>
-
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
