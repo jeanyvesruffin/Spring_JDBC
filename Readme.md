@@ -31,7 +31,7 @@ Créer un fichier de configuration exemple jdbc-config.xml
 		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
 		<property name="url" value="jdbc:mysql://localhost:3306/ride_tracker?useSSL=false" />
 		<property name="username" value="root" />
-		<property name="password" value="password" />
+		<property name="password" value="Grimgo37!" />
 	</bean>
 	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
 		<property name="dataSource" ref="dataSource" />
@@ -42,6 +42,7 @@ Rappelons que la ref="dataSource" mis dans le bean jdbcTemplate correspond à l'i
 ## Spring MVC, mise en oeuvres des packages model/ controller/ service/ repository
 
 1 - Creation des **Pojo** dans le package **model** (ici description d'une course "Ride.java")
+
 2 - Creation package **controller** contenant RideController qui **injecte/ cable les services** ici RideService et mappe les futures demandes (request http).
 Ici la requete Http GET appelé sur l'url localhost:3306/ride_tracker/rides nous retournera une list de course.
 
@@ -85,7 +86,7 @@ Implementation de l'interface RideServiceImpl
 	
 
 4 - Creation package **repository** contenant nos data ici RideRepositoryImpl . Implementant l'interface RideRepository, contrat d'interface qui contient la methode List< Ride > getRides().
-Puis nous definition le contrat de l'interface ici List <Ride> getRides() qui instancie une nouvelle course et la met dans une liste.
+Puis nous definition le contrat de l'interface ici List <Ride> getRides() qui instancie une nouvelle course et la met dans une liste. Le package repository peut etre appele aussi DAO pour Data Acces Objet.
 
 Interface RideRepository
 
@@ -127,7 +128,6 @@ Implementation de l'interface RideRepositoryImpl
 Plusieurs méthodes s'offre à nous soit à l'aide de:
 1. JdbcTemplate Insert
 2. SimpleJdbcInsert
-3. Object Relational Mapping 
 
 ## Avant de commencer
 ##### Creation des tables de la base donnée
@@ -209,6 +209,324 @@ Ajouter dans l'implementation RideRepositoryImpl
 
 ## Creation d'enregistrement dans la base de donnée **JdbcTemplate Insert**
 
+Ajouter à la méthode public Ride createRide(Ride ride) du fichier RideRepositoryImpl, l'insertion en base de données:
+
+	...
+	@Override
+	public Ride createRide(Ride ride) {
+		jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
+		return null;
+	}
+	...
+
+
+## Creation d'enregistrement dans la base de donnée **SimpleJdbcInsert**
+
+Apres avoir commenté le code precedent.
+
+	// jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
+		
+Ajouter les lignes suivantes, l'avantage est que nous retournons l'id de la ligne nouvellement inserée.
+
+	...
+	@Override
+	public Ride createRide(Ride ride) {
+		// Technique 1 insertion JdbcTemplate
+		// jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
+		//Technique 2: insertion d'un objet
+		SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate);
+		List<String> columns = new ArrayList<>();
+		columns.add("name");
+		columns.add("duration");
+		insert.setTableName("ride");
+		insert.setColumnNames(columns);
+		Map<String, Object> data = new HashMap<>();
+		data.put("name", ride.getName());
+		data.put("duration", ride.getDuration());
+		insert.setGeneratedKeyName("id");
+		Number key = insert.executeAndReturnKey(data);
+		System.out.println("id insert "+ key);
+		return null;
+	}
+	...
+
+## Lecture des enregistrements de la base de données
+La lecture est mise en oeuvre à l'aide de JdbcTemplate, RowMapper ou SimpleJdbcCall.
+
+##### Read All
+
+1 - Ajouter un id à votre model Ride.java avec ces getters et setters.
+
+	...
+	private Integer id;
+	...
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	...
+	
+	
+2 - On retire les information hard code du fichier RideRepositoryImpl
+
+		/*
+		Ride ride = new Ride();
+		ride.setName("Corner Canyon");
+		ride.setDuration(120);
+		List <Ride> rides = new ArrayList<>();
+		rides.add(ride);
+		*/
+
+3 - On remplace les informations precedement hard code:
+
+Dans RideRepositoryImpl
+
+	@Override
+	public List<Ride> getRides() {
+		List<Ride>rides = jdbcTemplate.query("select * from ride", new RowMapper<Ride>() {
+			@Override
+			public Ride mapRow(ResultSet rs, int rowNum) throws SQLException {
+				Ride ride = new Ride();
+				ride.setId(rs.getInt("id"));
+				ride.setName(rs.getString("name"));
+				ride.setDuration(rs.getInt("duration"));
+				return ride;
+			}
+		});
+		return rides;
+	}
+
+##### Modify Test
+Nous allons modifier le test de testCreateRide afin que celui-ci nous retourne l'objet créé en base de données
+
+Remplacer dans RestControllerTest:
+
+	restTemplate.put("http://localhost:3306/ride_tracker/ride",ride);
+
+Par:
+
+	ride = restTemplate.postForObject("http://localhost:8080/ride_tracker/ride", ride, Ride.class);	
+
+
+Puis remplacer dans le fichier RideController:
+
+	@RequestMapping(value = "/ride", method = RequestMethod.PUT)
+	public @ResponseBody Ride createRide(@RequestBody Ride ride) {
+		return rideService.createRide(ride);
+	}
+
+par
+
+	@RequestMapping(value = "/ride", method = RequestMethod.POST)
+	public @ResponseBody Ride createRide(@RequestBody Ride ride) {
+		return rideService.createRide(ride);
+	}
+
+##### Externalisation RowMapper
+Creation d'un RowMapper unique que l'on externalise pour une simple course (getSingleRide)
+
+1 - Creer un package dans repository que l'on nommera util
+2 - Creer une classe implementant RowMapper (attention issu de la librairy spring-core et non swing)
+3 - Puis copier/coller la partie rowmapper du fichier RideRepositoryImpl dans la classe precedemment cree:
+
+
+	public class RideRowMapper implements RowMapper<Ride> {
+		@Override
+		public Ride mapRow(ResultSet rs, int rowNum) throws SQLException {
+			Ride ride = new Ride();
+			ride.setId(rs.getInt("id"));
+			ride.setName(rs.getString("name"));
+			ride.setDuration(rs.getInt("duration"));
+			return ride;
+		}
+	}
+	
+4 - Supprimer le rowMapper du fichier RideRepositoryImpl et ajouter le new RideRowMapper:
+
+	...
+	@Override
+	public List<Ride> getRides() {
+		List<Ride>rides = jdbcTemplate.query("select * from ride", new RideRowMapper());
+		return rides;
+	}
+
+
+##### Create Ride Read
+Dans le fichier RideRepositoryImpl remplacer :
+
+	jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
+
+Par:
+
+	@Override
+	public Ride createRide(Ride ride) {
+		KeyHolder keyHolder = new GeneratedKeyHolder();
+		jdbcTemplate.update(new PreparedStatementCreator() {
+			@Override
+			public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+				PreparedStatement ps = con.prepareStatement("INSERT INTO ride (name, duration) value (?,?)", new String [] {"id"});
+				ps.setString(1, ride.getName());
+				ps.setInt(2, ride.getDuration());
+				return ps;
+			}
+		}, keyHolder);
+		Number id = keyHolder.getKey();
+		return getRide(id.intValue());
+	}
+	
+Puis creer la methode getRide():
+
+
+	public Ride getRide(Integer id) {
+		Ride ride = jdbcTemplate.queryForObject("select * from ride where id = ?", new RideRowMapper(), id);
+		return ride;
+	}
+
+##### Lecture d'un SimpleJdbcInsert
+
+1 - Basculer dans le fichier RideRepositoryImpl la technique precedente et revenir à notre SimpleJdbsInsert, telquel.
+
+	SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate);
+	insert.setGeneratedKeyName("id");
+	Map<String, Object> data = new HashMap<>();
+	data.put("name", ride.getName());
+	data.put("duration", ride.getDuration());
+	List<String> columns = new ArrayList<>();
+	columns.add("name");
+	columns.add("duration");
+	insert.setTableName("ride");
+	insert.setColumnNames(columns);
+	Number key = insert.executeAndReturnKey(data);
+	return getRide(key.intValue());
+
+Nous avons desormais changé notre initialisation de repository par un PrepareStatementCreator qui nous retourne la course a travers ca clé.
+
+## Mise à jour (Update) des enregistrements en base de données
+
+Nous utiliserons JdbcTemplate ainsi que batchUpdate qui nous permettra d'envoyer en une requete plusieurs update en base de données.
+
+##### Select One
+
+1 - On Override la methode getRide du fichier RideRepositoryImpl et l'ajoutons au contrat d'interface.
+
+Dans RideRepositoryImpl
+
+	...
+	@Override
+		public Ride getRide(Integer id) {
+			Ride ride = jdbcTemplate.queryForObject("SELECT * FROM ride WHERE id = ?", new RideRowMapper(), id);
+			return ride;
+		}
+	...
+		
+Dans RideRepository
+
+	...
+	Ride getRide(Integer id);
+	...
+
+2 - Idem pour le package service
+
+Dans RideServiceImpl
+	
+	...
+	@Override
+	public Ride getRide(Integer id) {
+		return rideRepository.getRide(id);
+	}
+	...
+	
+Dans RideService
+	
+	...
+	Ride getRide(Integer id);
+	...
+	
+3 - Compléter le controller
+
+Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de requete Http la requete de demande d'une course avec l'id en paramatre.
+
+	...
+	@RequestMapping(value = "/ride/{id}", method = RequestMethod.GET)
+	public @ResponseBody Ride getRide(@PathVariable(value="id") Integer id) {
+		return rideService.getRide(id);
+	}
+	...
+	
+4 - Ajoutons le test associé:
+
+	...
+	@Test(timeout=3000)
+	public void testGetRide() {
+		RestTemplate restTemplate = new RestTemplate();
+		Ride ride = restTemplate.getForObject("http://localhost:8080/ride_tracker/ride/1", Ride.class);
+		System.out.println("Ride name :" + ride.getName());
+	}
+	...
+	
+##### UpdateOne
+
+1 - Ajouter le test
+	
+	...
+	@Test(timeout=3000)
+	public void testUpdateRide() {
+		RestTemplate restTemplate = new RestTemplate();
+		Ride ride = restTemplate.getForObject("http://localhost:8080/ride_tracker/ride/1", Ride.class);
+		ride.setDuration(ride.getDuration() + 1);
+		restTemplate.put("http://localhost:8080/ride_tracker/ride", ride);
+		System.out.println("Ride name :" + ride.getName());
+	}
+	...
+
+2 - Ajouter au RideController la requete de mise à jour
+
+	...
+	@RequestMapping(value = "/ride}", method = RequestMethod.PUT)
+	public @ResponseBody Ride updateRide(@RequestBody Ride ride) {
+		return rideService.updateRide(ride);
+	}
+	...
+	
+3 - Ajouter au contrat d'interface RideService
+
+	...
+	Ride updateRide(Ride ride);
+	...
+	
+4 - On ajoute l'implementation de l'interface dans le fichier RideServiceImpl
+
+	...
+	@Override
+	public Ride updateRide(Ride ride) {
+		return rideRepository.updateRide(ride);
+	}
+	...
+	
+5 - Ajouter au contrat d'interface RideRepository
+	
+	...
+	Ride updateRide(Ride ride);
+	...
+	
+6 - On ajoute l'implementation de l'interface dans le fichier RideRepositoryImpl
+
+	...
+	@Override
+	public Ride updateRide(Ride ride) {
+		jdbcTemplate.update("UPDATE ride SET name = ?, duration = ? WHERE id = ?", ride.getName(), ride.getDuration(), ride.getId());
+		return ride;
+	}
+	...
+
+
+##### UpdateMultiple
+
+
+
+
 ##  BUG FIXE
 
 SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
@@ -234,4 +552,8 @@ Bien penser à arreter et redemarrer mysql dans le menu windows tapper services p
 Attention le service porte le nom defini lors de l'installation de mysql ici SQLAuthority
 	
 
+Le jour suivant: "Toujours en  erreur"
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.dao.DataAccessResourceFailureException: Error retrieving database meta-data; nested exception is org.springframework.jdbc.support.MetaDataAccessException: Could not get Connection for extracting meta-data; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
+java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
+Il faut tous simplement allumer le server mysql workbench

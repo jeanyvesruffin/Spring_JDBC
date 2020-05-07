@@ -13,6 +13,32 @@ import org.junit.Test;
 
 public class RestControllerTest {
 
+	/**
+	 * Test permettant de retourner les information de la course id = 1
+	 */
+	@Test(timeout=3000)
+	public void testGetRide() {
+		RestTemplate restTemplate = new RestTemplate();
+		Ride ride = restTemplate.getForObject("http://localhost:8080/ride_tracker/ride/1", Ride.class);
+		System.out.println("Ride name :" + ride.getName());
+
+	}
+	
+	/**
+	 * Test permettant de mettre à jour la durée de la course numero 1 en ajoutant 1 à la durée
+	 */
+	@Test(timeout=3000)
+	public void testUpdateRide() {
+		RestTemplate restTemplate = new RestTemplate();
+		Ride ride = restTemplate.getForObject("http://localhost:8080/ride_tracker/ride/1", Ride.class);
+		ride.setDuration(ride.getDuration() + 1);
+		restTemplate.put("http://localhost:8080/ride_tracker/ride", ride);
+		System.out.println("Ride name :" + ride.getName());
+	}
+	
+	/**
+	 * Test permettant de retourner la liste de course
+	 */
 	@Test(timeout=3000)
 	public void testGetRides() {
 		RestTemplate restTemplate = new RestTemplate();
@@ -29,6 +55,14 @@ public class RestControllerTest {
 	}
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
 	/**
 	 * Test de la creation d'une course en base de données
 	 */
@@ -38,10 +72,10 @@ public class RestControllerTest {
 		RestTemplate restTemplate = new RestTemplate();
 		//Creation d'une course
 		Ride ride = new Ride();
-		ride.setName("Course de Tours");
-		ride.setDuration(33);
+		ride.setName("Course de fin2");
+		ride.setDuration(40);
 		// put sur l'url qui correspond au controleur PUT A l'inverse lors du test testGetRides
 		// c'est l'url qui pointe sur le controleur GET
-		restTemplate.put("http://localhost:8080/ride_tracker/ride", ride);	
+		ride = restTemplate.postForObject("http://localhost:8080/ride_tracker/ride", ride, Ride.class);	
 	}
 }
