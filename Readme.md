@@ -1,14 +1,51 @@
 # Spring JDBC
 
-Spring JDBC a été crée pour resoudre les problèmes de complexité, de design, de portabilité et ainsi nous laisser faire le focus sur la partie business.
+Spring JDBC a ï¿½tï¿½ crï¿½e pour resoudre les problï¿½mes de complexitï¿½, de design, de portabilitï¿½ et ainsi nous laisser faire le focus sur la partie business.
+
+<!-- TOC -->
+
+- [Spring JDBC](#spring-jdbc)
+    - [Installation](#installation)
+    - [Configuration dependance et acces ï¿½ la base de donnï¿½e jdbc](#configuration-dependance-et-acces-ï¿½-la-base-de-donnï¿½e-jdbc)
+    - [Spring MVC, mise en oeuvres des packages model/ controller/ service/ repository](#spring-mvc-mise-en-oeuvres-des-packages-model-controller-service-repository)
+    - [Spring JDBC](#spring-jdbc-1)
+    - [Creation d'enregistrement dans la base de donnï¿½e](#creation-denregistrement-dans-la-base-de-donnï¿½e)
+    - [Avant de commencer](#avant-de-commencer)
+        - [Creation des tables de la base donnï¿½e](#creation-des-tables-de-la-base-donnï¿½e)
+        - [Creation des tests et des controllers](#creation-des-tests-et-des-controllers)
+        - [Creation d'un appel au service](#creation-dun-appel-au-service)
+        - [Creation d'un appel au repository](#creation-dun-appel-au-repository)
+    - [Creation d'enregistrement dans la base de donnï¿½e **JdbcTemplate Insert**](#creation-denregistrement-dans-la-base-de-donnï¿½e-jdbctemplate-insert)
+    - [Creation d'enregistrement dans la base de donnï¿½e **SimpleJdbcInsert**](#creation-denregistrement-dans-la-base-de-donnï¿½e-simplejdbcinsert)
+    - [Lecture des enregistrements de la base de donnï¿½es](#lecture-des-enregistrements-de-la-base-de-donnï¿½es)
+        - [Read All](#read-all)
+        - [Modify Test](#modify-test)
+        - [Externalisation RowMapper](#externalisation-rowmapper)
+        - [Create Ride Read](#create-ride-read)
+        - [Lecture d'un SimpleJdbcInsert](#lecture-dun-simplejdbcinsert)
+    - [Mise ï¿½ jour (Update) des enregistrements en base de donnï¿½es](#mise-ï¿½-jour-update-des-enregistrements-en-base-de-donnï¿½es)
+        - [Select One](#select-one)
+        - [UpdateOne](#updateone)
+        - [Mise ï¿½ jour de batch (update multiple en une seul requete)](#mise-ï¿½-jour-de-batch-update-multiple-en-une-seul-requete)
+    - [Suppression d'un enregistrement de la base de donnï¿½es](#suppression-dun-enregistrement-de-la-base-de-donnï¿½es)
+        - [Delete JdbcTemplate](#delete-jdbctemplate)
+        - [Delete NamedParameterJdbcTemplate](#delete-namedparameterjdbctemplate)
+    - [Exception](#exception)
+        - [Modification de test pour attraper l'erreur](#modification-de-test-pour-attraper-lerreur)
+        - [ExceptionHandler et ServiceError](#exceptionhandler-et-serviceerror)
+    - [Transactions](#transactions)
+        - [Transaction Manager](#transaction-manager)
+    - [BUG FIXE](#bug-fixe)
+
+<!-- /TOC -->
 
 
 ## Installation
 
-Une base de données Mysql est créé à l'aide de Mysql Workbench.
+Une base de donnï¿½es Mysql est crï¿½ï¿½ ï¿½ l'aide de Mysql Workbench.
 
 
-## Configuration dependance et acces à la base de donnée jdbc
+## Configuration dependance et acces ï¿½ la base de donnï¿½e jdbc
 
 Ajout des dependances Maven au fichier .pom
 
@@ -23,7 +60,7 @@ Ajout des dependances Maven au fichier .pom
 		<version>5.2.6.RELEASE</version>
 		</dependency>
 		
-Créer un fichier de configuration exemple jdbc-config.xml
+Crï¿½er un fichier de configuration exemple jdbc-config.xml
 
 - Ajouter le bean dataSource, ou se trouvera la configuration du serveur et jdbcTemplate
 
@@ -37,14 +74,14 @@ Créer un fichier de configuration exemple jdbc-config.xml
 		<property name="dataSource" ref="dataSource" />
 	</bean>
 	
-Rappelons que la ref="dataSource" mis dans le bean jdbcTemplate correspond à l'id du bean id="dataSource" du dessus
+Rappelons que la ref="dataSource" mis dans le bean jdbcTemplate correspond ï¿½ l'id du bean id="dataSource" du dessus
 
 ## Spring MVC, mise en oeuvres des packages model/ controller/ service/ repository
 
 1 - Creation des **Pojo** dans le package **model** (ici description d'une course "Ride.java")
 
 2 - Creation package **controller** contenant RideController qui **injecte/ cable les services** ici RideService et mappe les futures demandes (request http).
-Ici la requete Http GET appelé sur l'url localhost:3306/ride_tracker/rides nous retournera une list de course.
+Ici la requete Http GET appelï¿½ sur l'url localhost:3306/ride_tracker/rides nous retournera une list de course.
 
 	...
 	@Controller
@@ -115,7 +152,7 @@ Implementation de l'interface RideRepositoryImpl
 	
 ## Spring JDBC
 
-1 - On cable (@Autowired) une instance JdbcTemplate dans le fichier de RideRepositoryImpl, qui fait reference à notre beans JdbcTemplate.
+1 - On cable (@Autowired) une instance JdbcTemplate dans le fichier de RideRepositoryImpl, qui fait reference ï¿½ notre beans JdbcTemplate.
 
 	...
 	public class RideRepositoryImpl implements RideRepository {
@@ -124,13 +161,13 @@ Implementation de l'interface RideRepositoryImpl
 	}
 	...
 	
-## Creation d'enregistrement dans la base de donnée
-Plusieurs méthodes s'offre à nous soit à l'aide de:
+## Creation d'enregistrement dans la base de donnï¿½e
+Plusieurs mï¿½thodes s'offre ï¿½ nous soit ï¿½ l'aide de:
 1. JdbcTemplate Insert
 2. SimpleJdbcInsert
 
 ## Avant de commencer
-##### Creation des tables de la base donnée
+### Creation des tables de la base donnï¿½e
 Dans l'editeur WorkBench executer le script suivant:
 
 	CREATE TABLE 'ride_tracker'.'ride'(
@@ -140,8 +177,8 @@ Dans l'editeur WorkBench executer le script suivant:
 		PRIMARY KEY ('id'));
 	)
 
-##### Creation des tests et des controllers
-Creer une methode de test simulant le remplissage de la table ride_tracker qui intancie RestTemplate:pour l'accès HTTP côté client synchrone. Elle simplifie la communication avec les serveurs HTTP et applique les principes RESTful. Elle gère les connexions HTTP, laissant le code d'application fournir des URL (avec des variables de modèle possibles) et extraire les résultats.
+### Creation des tests et des controllers
+Creer une methode de test simulant le remplissage de la table ride_tracker qui intancie RestTemplate:pour l'accï¿½s HTTP cï¿½tï¿½ client synchrone. Elle simplifie la communication avec les serveurs HTTP et applique les principes RESTful. Elle gï¿½re les connexions HTTP, laissant le code d'application fournir des URL (avec des variables de modï¿½le possibles) et extraire les rï¿½sultats.
 
 Pour le test ajouter:
 
@@ -164,7 +201,7 @@ Sur le controlleur ajouter:
 	}
 
 
-##### Creation d'un appel au service
+### Creation d'un appel au service
 Nous allons creer une nouvelle course lorsque l'on passera par la methode createRide du controlleur utilant la RequesTMethod.PUT
 
 Dans le controller
@@ -175,7 +212,7 @@ Dans le controller
 		return rideService.create(ride);
 	}
 
-Puis à l'aide de l'ide generer la methode creatRide() dans l'interface
+Puis ï¿½ l'aide de l'ide generer la methode creatRide() dans l'interface
 Puis generer dans l'implementation de l'interface la methode create(ride) (@Override)
 
 Ajouter dans l'interface RideService
@@ -193,7 +230,7 @@ Ajouter dans l'implementation RideServiceImpl
 		}
 	...
 
-##### Creation d'un appel au repository
+### Creation d'un appel au repository
 Nous alimentons enfin le repository en ajoutant au contrat d'interface la methode createRide(Ride ride)
 
 Ajouter dans le fichier RideRepository
@@ -207,9 +244,9 @@ Ajouter dans l'implementation RideRepositoryImpl
 		return null;
 	}
 
-## Creation d'enregistrement dans la base de donnée **JdbcTemplate Insert**
+## Creation d'enregistrement dans la base de donnï¿½e **JdbcTemplate Insert**
 
-Ajouter à la méthode public Ride createRide(Ride ride) du fichier RideRepositoryImpl, l'insertion en base de données:
+Ajouter ï¿½ la mï¿½thode public Ride createRide(Ride ride) du fichier RideRepositoryImpl, l'insertion en base de donnï¿½es:
 
 	...
 	@Override
@@ -220,13 +257,13 @@ Ajouter à la méthode public Ride createRide(Ride ride) du fichier RideRepository
 	...
 
 
-## Creation d'enregistrement dans la base de donnée **SimpleJdbcInsert**
+## Creation d'enregistrement dans la base de donnï¿½e **SimpleJdbcInsert**
 
-Apres avoir commenté le code precedent.
+Apres avoir commentï¿½ le code precedent.
 
 	// jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
 		
-Ajouter les lignes suivantes, l'avantage est que nous retournons l'id de la ligne nouvellement inserée.
+Ajouter les lignes suivantes, l'avantage est que nous retournons l'id de la ligne nouvellement inserï¿½e.
 
 	...
 	@Override
@@ -250,12 +287,12 @@ Ajouter les lignes suivantes, l'avantage est que nous retournons l'id de la lign
 	}
 	...
 
-## Lecture des enregistrements de la base de données
-La lecture est mise en oeuvre à l'aide de JdbcTemplate, RowMapper ou SimpleJdbcCall.
+## Lecture des enregistrements de la base de donnï¿½es
+La lecture est mise en oeuvre ï¿½ l'aide de JdbcTemplate, RowMapper ou SimpleJdbcCall.
 
-##### Read All
+### Read All
 
-1 - Ajouter un id à votre model Ride.java avec ces getters et setters.
+1 - Ajouter un id ï¿½ votre model Ride.java avec ces getters et setters.
 
 	...
 	private Integer id;
@@ -298,8 +335,8 @@ Dans RideRepositoryImpl
 		return rides;
 	}
 
-##### Modify Test
-Nous allons modifier le test de testCreateRide afin que celui-ci nous retourne l'objet créé en base de données
+### Modify Test
+Nous allons modifier le test de testCreateRide afin que celui-ci nous retourne l'objet crï¿½ï¿½ en base de donnï¿½es
 
 Remplacer dans RestControllerTest:
 
@@ -324,7 +361,7 @@ par
 		return rideService.createRide(ride);
 	}
 
-##### Externalisation RowMapper
+### Externalisation RowMapper
 Creation d'un RowMapper unique que l'on externalise pour une simple course (getSingleRide)
 
 1 - Creer un package dans repository que l'on nommera util
@@ -353,7 +390,7 @@ Creation d'un RowMapper unique que l'on externalise pour une simple course (getS
 	}
 
 
-##### Create Ride Read
+### Create Ride Read
 Dans le fichier RideRepositoryImpl remplacer :
 
 	jdbcTemplate.update("INSERT INTO ride (name, duration) value (?,?)", ride.getName(), ride.getDuration());
@@ -384,9 +421,9 @@ Puis creer la methode getRide():
 		return ride;
 	}
 
-##### Lecture d'un SimpleJdbcInsert
+### Lecture d'un SimpleJdbcInsert
 
-1 - Basculer dans le fichier RideRepositoryImpl la technique precedente et revenir à notre SimpleJdbsInsert, telquel.
+1 - Basculer dans le fichier RideRepositoryImpl la technique precedente et revenir ï¿½ notre SimpleJdbsInsert, telquel.
 
 	SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate);
 	insert.setGeneratedKeyName("id");
@@ -401,13 +438,13 @@ Puis creer la methode getRide():
 	Number key = insert.executeAndReturnKey(data);
 	return getRide(key.intValue());
 
-Nous avons desormais changé notre initialisation de repository par un PrepareStatementCreator qui nous retourne la course a travers ca clé.
+Nous avons desormais changï¿½ notre initialisation de repository par un PrepareStatementCreator qui nous retourne la course a travers ca clï¿½.
 
-## Mise à jour (Update) des enregistrements en base de données
+## Mise ï¿½ jour (Update) des enregistrements en base de donnï¿½es
 
-Nous utiliserons JdbcTemplate ainsi que batchUpdate qui nous permettra d'envoyer en une requete plusieurs update en base de données.
+Nous utiliserons JdbcTemplate ainsi que batchUpdate qui nous permettra d'envoyer en une requete plusieurs update en base de donnï¿½es.
 
-##### Select One
+### Select One
 
 1 - On Override la methode getRide du fichier RideRepositoryImpl et l'ajoutons au contrat d'interface.
 
@@ -444,7 +481,7 @@ Dans RideService
 	Ride getRide(Integer id);
 	...
 	
-3 - Compléter le controller
+3 - Complï¿½ter le controller
 
 Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de requete Http la requete de demande d'une course avec l'id en paramatre.
 
@@ -455,7 +492,7 @@ Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de 
 	}
 	...
 	
-4 - Ajoutons le test associé:
+4 - Ajoutons le test associï¿½:
 
 	...
 	@Test(timeout=3000)
@@ -466,7 +503,7 @@ Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de 
 	}
 	...
 	
-##### UpdateOne
+### UpdateOne
 
 1 - Ajouter le test
 	
@@ -481,7 +518,7 @@ Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de 
 	}
 	...
 
-2 - Ajouter au RideController la requete de mise à jour
+2 - Ajouter au RideController la requete de mise ï¿½ jour
 
 	...
 	@RequestMapping(value = "/ride}", method = RequestMethod.PUT)
@@ -522,9 +559,9 @@ Dans le RideController, ajouter la methode qui permettra d'envoyer en entete de 
 	...
 
 
-##### Mise à jour de batch (update multiple en une seul requete)
+### Mise ï¿½ jour de batch (update multiple en une seul requete)
 
-1 - On ajoute une colonne à notre base de donnée
+1 - On ajoute une colonne ï¿½ notre base de donnï¿½e
 
 	USE ride_tracker;
 	ALTER TABLE ride ADD ride_date DATETIME AFTER duration;
@@ -587,12 +624,12 @@ Dans notre fichier RestControllerTest, ajouter le test suivant:
 	}
 	...
 
-## Suppression d'un enregistrement de la base de données
-Nous utiliserons JdbcTemplate ou NamedParameterJdbcTemplate pour supprimer des donnée dans la base de données.
+## Suppression d'un enregistrement de la base de donnï¿½es
+Nous utiliserons JdbcTemplate ou NamedParameterJdbcTemplate pour supprimer des donnï¿½e dans la base de donnï¿½es.
 
-##### Delete JdbcTemplate
+### Delete JdbcTemplate
 
-1 - Dans le fichier RestControllerTest, ajouter un test sur la suppression de donnée en base:
+1 - Dans le fichier RestControllerTest, ajouter un test sur la suppression de donnï¿½e en base:
 
 	...
 	@Test(timeout=3000)
@@ -642,7 +679,7 @@ Nous utiliserons JdbcTemplate ou NamedParameterJdbcTemplate pour supprimer des d
 	}
 	...
 	
-##### Delete NamedParameterJdbcTemplate
+### Delete NamedParameterJdbcTemplate
 Commenter au prealable la precedente technique de suppression dans le fichier RideRepositoryImpl public void deleteRide(Integer id)
 
 1 - Ajouter dans le fichier RideRepositoryImpl:
@@ -658,9 +695,9 @@ Commenter au prealable la precedente technique de suppression dans le fichier Ri
 	}
 	...
 
-Remarquons ici que le paramtre id est transmis à l'aide d'une Map
+Remarquons ici que le paramtre id est transmis ï¿½ l'aide d'une Map
 
-2 - Modifions notre test en remplaceant l'id à supprimer par un id existant, maintenant 17 . Dans le fichier RestControllerTest
+2 - Modifions notre test en remplaceant l'id ï¿½ supprimer par un id existant, maintenant 17 . Dans le fichier RestControllerTest
 
 	...
 	@Test(timeout=3000)
@@ -673,7 +710,7 @@ Remarquons ici que le paramtre id est transmis à l'aide d'une Map
 ## Exception
 Nous verrons ici comment traiter les exceptions.
 
-##### Modification de test pour attraper l'erreur
+### Modification de test pour attraper l'erreur
 
 1 - Ajouter le test suivant dans le fichier RestControllerTest
 
@@ -695,7 +732,7 @@ Nous verrons ici comment traiter les exceptions.
 	
 Si l'on test cela nous rencontrons une erreur. Mais son traitement n'est pas optimal.
 
-##### ExceptionHandler et ServiceError
+### ExceptionHandler et ServiceError
 
 1 - Ajouter un package exemple com.pluralsight.util
 
@@ -734,12 +771,12 @@ Si l'on test cela nous rencontrons une erreur. Mais son traitement n'est pas opt
 		return new ResponseEntity<>(error, HttpStatus.OK);
 	}
 
-Maintenant l'erreur est relevée mais le test s'execute normalement.
+Maintenant l'erreur est relevï¿½e mais le test s'execute normalement.
 
 ## Transactions
-Les transactions permettent de faire de multiple appel à jdbcTemplate à l'aide de DataSourceTransactionManager, cad, que l'on peut enchainer les requetes.
+Les transactions permettent de faire de multiple appel ï¿½ jdbcTemplate ï¿½ l'aide de DataSourceTransactionManager, cad, que l'on peut enchainer les requetes.
 
-##### Transaction Manager
+### Transaction Manager
 
 1 - Dans le fichier RideServiceImpl modifier la methode public void batch() telque:
 
@@ -770,26 +807,26 @@ Puis ajouter les deux beans suivants:
 	
 3 - Dans le fichier RideServiceImpl. Ajouter sur la methode public void batch() l'annotation @Transactional
 
-4 - S'il on test désormais la méthode testBatchUpdate.
+4 - S'il on test dï¿½sormais la mï¿½thode testBatchUpdate.
 
-Nous pouvons observer que l'ors de l'exception l'application ne plante pas et l'exceution de batchUpdate ne fait rien en base de donnée.
+Nous pouvons observer que l'ors de l'exception l'application ne plante pas et l'exceution de batchUpdate ne fait rien en base de donnï¿½e.
 
-Dans une application plus complexe, si je mettais à jour 3, 4, 5 tables de base de données, tout ce que j'avais à faire serait de mettre cette annotation en haut et cela annulerait toutes nos modifications si une exception était levée quelque part en cours de route.
+Dans une application plus complexe, si je mettais ï¿½ jour 3, 4, 5 tables de base de donnï¿½es, tout ce que j'avais ï¿½ faire serait de mettre cette annotation en haut et cela annulerait toutes nos modifications si une exception ï¿½tait levï¿½e quelque part en cours de route.
 
 ##  BUG FIXE
 
-SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retournï¿½ une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
 java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
 Solution:
 
-Desinstallation/ Reinstallation de MySQL à l'adresse :
+Desinstallation/ Reinstallation de MySQL ï¿½ l'adresse :
 
 https://dev.mysql.com/
 
 Toujours en erreur
 
-SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLException: The server time zone value 'Paris, Madrid (heure d??t?)' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the 'serverTimezone' configuration property) to use a more specifc time zone value if you want to utilize time zone support.] avec la cause
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retournï¿½ une exception [Request processing failed; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLException: The server time zone value 'Paris, Madrid (heure d??t?)' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the 'serverTimezone' configuration property) to use a more specifc time zone value if you want to utilize time zone support.] avec la cause
 com.mysql.cj.exceptions.InvalidConnectionAttributeException: The server time zone value 'Paris, Madrid (heure d??t?)' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the 'serverTimezone' configuration property) to use a more specifc time zone value if you want to utilize time zone support.
 
 Ajout dans le fichier de configuration my.ini de la ligne suivante:
@@ -797,12 +834,12 @@ Ajout dans le fichier de configuration my.ini de la ligne suivante:
 	# Set default time zone
 	default-time-zone = '+02:00'
 	
-Bien penser à arreter et redemarrer mysql dans le menu windows tapper services puis chercher le afin de le restart.
+Bien penser ï¿½ arreter et redemarrer mysql dans le menu windows tapper services puis chercher le afin de le restart.
 Attention le service porte le nom defini lors de l'installation de mysql ici SQLAuthority
 	
 
 Le jour suivant: "Toujours en  erreur"
-SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retourné une exception [Request processing failed; nested exception is org.springframework.dao.DataAccessResourceFailureException: Error retrieving database meta-data; nested exception is org.springframework.jdbc.support.MetaDataAccessException: Could not get Connection for extracting meta-data; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
+SEVERE: Servlet.service() du Servlet [rideTrackerServlet] dans le contexte au chemin [/ride_tracker] a retournï¿½ une exception [Request processing failed; nested exception is org.springframework.dao.DataAccessResourceFailureException: Error retrieving database meta-data; nested exception is org.springframework.jdbc.support.MetaDataAccessException: Could not get Connection for extracting meta-data; nested exception is org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection; nested exception is java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed] avec la cause
 java.sql.SQLNonTransientConnectionException: Public Key Retrieval is not allowed
 
 SOLUTION Il faut tous simplement allumer le server mysql workbench
