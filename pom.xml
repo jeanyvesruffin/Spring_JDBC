@@ -38,9 +38,9 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-		  <groupId>com.fasterxml.jackson.core</groupId>
-		  <artifactId>jackson-databind</artifactId>
-		  <version>[2.9.10.5,)</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.10.0.pr1</version>
 		</dependency>
 		<!--moderate severity <dependency>
 			<groupId>log4j</groupId>
